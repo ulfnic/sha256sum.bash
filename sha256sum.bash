@@ -28,7 +28,7 @@ sha256sum.bash() {
 	local rotright__out rotright__a rotright__b rotright__c ch__out maj__out ep0__out ep1__out sig0__out sig1__out b32__out not32__out
 
 	function dbl_int_add {
-		if [ ${bitlen[0]} -gt $(( 0xffffffff - ${1} )) ]; then
+		if [[ ${bitlen[0]} > $(( 0xffffffff - ${1} )) ]]; then
 			bitlen[1]=$(( ${bitlen[1]} + 1 ))
 		fi
 		bitlen[0]=$(( ${bitlen[0]} + ${1} ))
@@ -145,7 +145,7 @@ sha256sum.bash() {
 		for byte in $line; do
 			data[$datalen]=$byte
 			datalen=$(( $datalen + 1 ))
-			if [ $datalen -eq 64 ]; then
+			if [[ $datalen == 64 ]]; then
 				sha256_transform
 				dbl_int_add 512
 				datalen=0
@@ -155,17 +155,17 @@ sha256sum.bash() {
 	
 	local i=$datalen
 	
-	if [ $datalen -lt 56 ]; then
+	if [[ $datalen < 56 ]]; then
 		data[$i]=$(( 0x80 ))
 		i=$(( $i + 1 ))
-		while [ $i -lt 56 ]; do
+		while [[ $i < 56 ]]; do
 			data[$i]=0
 			i=$(( $i + 1 ))
 		done
 	else
 		data[$i]=$(( 0x80 ))
 		i=$(( $i + 1 ))
-		while [ $i -lt 64 ]; do
+		while [[ $i < 64 ]]; do
 			data[$i]=0
 			i=$(( $i + 1 ))
 		done
