@@ -25,7 +25,7 @@ sha256sum.bash() {
 	local datalen=0
 	local bitlen=(0 0)
 	local state=($((0x6a09e667)) $((0xbb67ae85)) $((0x3c6ef372)) $((0xa54ff53a)) $((0x510e527f)) $((0x9b05688c)) $((0x1f83d9ab)) $((0x5be0cd19)))
-	local rotright__out rotright__a rotright__b rotright__c ch__out maj__out ep0__out ep1__out sig0__out sig1__out
+	local rotright__out rotright__a rotright__b rotright__c ch__out maj__out ep0__out ep1__out sig0__out sig1__out b32__out not32__out
 
 	function dbl_int_add {
 		if [ ${bitlen[0]} -gt $(( 0xffffffff - ${1} )) ]; then
@@ -38,7 +38,8 @@ sha256sum.bash() {
 		rotright__out=$(( ((${1} >> ${2}) | (${1} << (32 - ${2}))) & 0xFFFFFFFF ))
 	}
 	function ch {
-		ch__out=$(( (${1} & ${2}) ^ ($(not32 ${1}) & ${3}) ))
+		not32 ${1}
+		ch__out=$(( (${1} & ${2}) ^ (not32__out & ${3}) ))
 	}
 	function maj {
 		maj__out=$(( (${1} & ${2}) ^ (${1} & ${3}) ^ (${2} & ${3}) ))
@@ -66,10 +67,11 @@ sha256sum.bash() {
 		sig1__out=$(( rotright__a ^ rotright__b ^ (${1} >> 10) ))
 	}
 	function b32 {
-		echo $(( ${1} & 0xFFFFFFFF ))
+		b32__out=$(( ${1} & 0xFFFFFFFF ))
 	}
 	function not32 {
 		b32 $(( ~${1} ))
+		not32__out=$b32__out
 	}
 	
 	function sha256_transform {
@@ -77,12 +79,14 @@ sha256sum.bash() {
 		m=(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
 		for i in {0..15}; do
 			local j=$(($i * 4))
-			m[$i]=$(b32 $(( (${data[$j]} << 24) | (${data[$(($j + 1))]} << 16) | (${data[$(($j + 2))]} << 8) | ${data[$(($j + 3))]} )))
+			b32 $(( (${data[$j]} << 24) | (${data[$(($j + 1))]} << 16) | (${data[$(($j + 2))]} << 8) | ${data[$(($j + 3))]} ))
+			m[$i]=$b32__out
 		done
 		for i in {16..63}; do
 			sig0 ${m[$(($i - 15))]}
 			sig1 ${m[$(($i - 2))]}
-			m[$i]=$(b32 $(( sig1__out + ${m[$(($i - 7))]} + sig0__out + ${m[$(($i - 16))]} )))
+			b32 $(( sig1__out + ${m[$(($i - 7))]} + sig0__out + ${m[$(($i - 16))]} ))
+			m[$i]=$b32__out
 		done
 
 		local a=${state[0]}
@@ -95,31 +99,46 @@ sha256sum.bash() {
 		local h=${state[7]}
 	
 		for i in {0..63}; do
+			ep1 $e
 			ch $e $f $g
+			b32 $(( $h + $ep1__out + $ch__out + ${k[$i]} + ${m[$i]} ))
+			local t1=$b32__out
+
 			maj $a $b $c
 			ep0 $a
-			ep1 $e
+			b32 $(( $ep0__out + $maj__out ))
+			local t2=$b32__out
 
-			local t1=$(b32 $(( $h + $ep1__out + $ch__out + ${k[$i]} + ${m[$i]} )))
-			local t2=$(b32 $(( $ep0__out + $maj__out )))
 			h=$g
 			g=$f
 			f=$e
-			e=$(b32 $(( $d + $t1 )))
+
+			b32 $(( $d + $t1 ))
+			e=$b32__out
 			d=$c
 			c=$b
 			b=$a
-			a=$(b32 $(( $t1 + $t2 )))
+
+			b32 $(( $t1 + $t2 ))
+			a=$b32__out
 		done
-	
-		state[0]=$(b32 $(( ${state[0]} + $a )))
-		state[1]=$(b32 $(( ${state[1]} + $b )))
-		state[2]=$(b32 $(( ${state[2]} + $c )))
-		state[3]=$(b32 $(( ${state[3]} + $d )))
-		state[4]=$(b32 $(( ${state[4]} + $e )))
-		state[5]=$(b32 $(( ${state[5]} + $f )))
-		state[6]=$(b32 $(( ${state[6]} + $g )))
-		state[7]=$(b32 $(( ${state[7]} + $h )))
+		b32 $(( ${state[0]} + $a ))	
+		state[0]=$b32__out
+		b32 $(( ${state[1]} + $b ))
+		state[1]=$b32__out
+		b32 $(( ${state[2]} + $c ))
+		state[2]=$b32__out
+		b32 $(( ${state[3]} + $d ))
+		state[3]=$b32__out
+		b32 $(( ${state[4]} + $e ))
+		state[4]=$b32__out
+		b32 $(( ${state[5]} + $f ))
+		state[5]=$b32__out
+		b32 $(( ${state[6]} + $g ))
+		state[6]=$b32__out
+		b32 $(( ${state[7]} + $h ))
+		state[7]=$b32__out
+
 	}
 	
 	while read line; do
