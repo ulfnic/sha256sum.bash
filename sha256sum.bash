@@ -25,7 +25,7 @@ sha256sum.bash() {
 	local datalen=0
 	local bitlen=(0 0)
 	local state=($((0x6a09e667)) $((0xbb67ae85)) $((0x3c6ef372)) $((0xa54ff53a)) $((0x510e527f)) $((0x9b05688c)) $((0x1f83d9ab)) $((0x5be0cd19)))
-	local rotright__out rotright__a rotright__b rotright__c
+	local rotright__out rotright__a rotright__b rotright__c ch__out
 
 	function dbl_int_add {
 		if [ ${bitlen[0]} -gt $(( 0xffffffff - ${1} )) ]; then
@@ -38,7 +38,7 @@ sha256sum.bash() {
 		rotright__out=$(( ((${1} >> ${2}) | (${1} << (32 - ${2}))) & 0xFFFFFFFF ))
 	}
 	function ch {
-		echo $(( (${1} & ${2}) ^ ($(not32 ${1}) & ${3}) ))
+		ch__out=$(( (${1} & ${2}) ^ ($(not32 ${1}) & ${3}) ))
 	}
 	function maj {
 		echo $(( (${1} & ${2}) ^ (${1} & ${3}) ^ (${2} & ${3}) ))
@@ -93,7 +93,9 @@ sha256sum.bash() {
 		local h=${state[7]}
 	
 		for i in {0..63}; do
-			local t1=$(b32 $(( $h + $(ep1 $e) + $(ch $e $f $g) + ${k[$i]} + ${m[$i]} )))
+			ch $e $f $g
+
+			local t1=$(b32 $(( $h + $(ep1 $e) + $ch__out + ${k[$i]} + ${m[$i]} )))
 			local t2=$(b32 $(( $(ep0 $a) + $(maj $a $b $c) )))
 			h=$g
 			g=$f
