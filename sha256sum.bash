@@ -25,7 +25,8 @@ sha256sum.bash() {
 	local datalen=0
 	local bitlen=(0 0)
 	local state=($((0x6a09e667)) $((0xbb67ae85)) $((0x3c6ef372)) $((0xa54ff53a)) $((0x510e527f)) $((0x9b05688c)) $((0x1f83d9ab)) $((0x5be0cd19)))
-	
+	local rotright__out rotright__a rotright__b rotright__c
+
 	function dbl_int_add {
 		if [ ${bitlen[0]} -gt $(( 0xffffffff - ${1} )) ]; then
 			bitlen[1]=$(( ${bitlen[1]} + 1 ))
@@ -34,7 +35,7 @@ sha256sum.bash() {
 	}
 	
 	function rotright {
-		echo $(( ((${1} >> ${2}) | (${1} << (32 - ${2}))) & 0xFFFFFFFF ))
+		rotright__out=$(( ((${1} >> ${2}) | (${1} << (32 - ${2}))) & 0xFFFFFFFF ))
 	}
 	function ch {
 		echo $(( (${1} & ${2}) ^ ($(not32 ${1}) & ${3}) ))
@@ -43,16 +44,26 @@ sha256sum.bash() {
 		echo $(( (${1} & ${2}) ^ (${1} & ${3}) ^ (${2} & ${3}) ))
 	}
 	function ep0 {
-		echo $(( $(rotright ${1} 2) ^ $(rotright ${1} 13) ^ $(rotright ${1} 22) ))
+		rotright ${1} 2; rotright__a=$rotright__out
+		rotright ${1} 13; rotright__b=$rotright__out
+		rotright ${1} 22; rotright__c=$rotright__out
+		echo $(( rotright__a ^ rotright__b ^ rotright__c ))
 	}
 	function ep1 {
-		echo $(( $(rotright ${1} 6) ^ $(rotright ${1} 11) ^ $(rotright ${1} 25) ))
+		rotright ${1} 6; rotright__a=$rotright__out
+		rotright ${1} 11; rotright__b=$rotright__out
+		rotright ${1} 25; rotright__c=$rotright__out
+		echo $(( rotright__a ^ rotright__b ^ rotright__c ))
 	}
 	function sig0 {
-		echo $(( $(rotright ${1} 7) ^ $(rotright ${1} 18) ^ (${1} >> 3) ))
+		rotright ${1} 7; rotright__a=$rotright__out
+		rotright ${1} 18; rotright__b=$rotright__out
+		echo $(( rotright__a ^ rotright__b ^ (${1} >> 3) ))
 	}
 	function sig1 {
-		echo $(( $(rotright ${1} 17) ^ $(rotright ${1} 19) ^ (${1} >> 10) ))
+		rotright ${1} 17; rotright__a=$rotright__out
+		rotright ${1} 19; rotright__b=$rotright__out
+		echo $(( rotright__a ^ rotright__b ^ (${1} >> 10) ))
 	}
 	function b32 {
 		echo $(( ${1} & 0xFFFFFFFF ))
