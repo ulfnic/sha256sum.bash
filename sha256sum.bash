@@ -25,7 +25,7 @@ sha256sum.bash() {
 	local datalen=0
 	local bitlen=(0 0)
 	local state=($((0x6a09e667)) $((0xbb67ae85)) $((0x3c6ef372)) $((0xa54ff53a)) $((0x510e527f)) $((0x9b05688c)) $((0x1f83d9ab)) $((0x5be0cd19)))
-	local rotright__out rotright__a rotright__b rotright__c ch__out
+	local rotright__out rotright__a rotright__b rotright__c ch__out maj__out ep0__out ep1__out sig0__out sig1__out
 
 	function dbl_int_add {
 		if [ ${bitlen[0]} -gt $(( 0xffffffff - ${1} )) ]; then
@@ -41,29 +41,29 @@ sha256sum.bash() {
 		ch__out=$(( (${1} & ${2}) ^ ($(not32 ${1}) & ${3}) ))
 	}
 	function maj {
-		echo $(( (${1} & ${2}) ^ (${1} & ${3}) ^ (${2} & ${3}) ))
+		maj__out=$(( (${1} & ${2}) ^ (${1} & ${3}) ^ (${2} & ${3}) ))
 	}
 	function ep0 {
 		rotright ${1} 2; rotright__a=$rotright__out
 		rotright ${1} 13; rotright__b=$rotright__out
 		rotright ${1} 22; rotright__c=$rotright__out
-		echo $(( rotright__a ^ rotright__b ^ rotright__c ))
+		ep0__out=$(( rotright__a ^ rotright__b ^ rotright__c ))
 	}
 	function ep1 {
 		rotright ${1} 6; rotright__a=$rotright__out
 		rotright ${1} 11; rotright__b=$rotright__out
 		rotright ${1} 25; rotright__c=$rotright__out
-		echo $(( rotright__a ^ rotright__b ^ rotright__c ))
+		ep1__out=$(( rotright__a ^ rotright__b ^ rotright__c ))
 	}
 	function sig0 {
 		rotright ${1} 7; rotright__a=$rotright__out
 		rotright ${1} 18; rotright__b=$rotright__out
-		echo $(( rotright__a ^ rotright__b ^ (${1} >> 3) ))
+		sig0__out=$(( rotright__a ^ rotright__b ^ (${1} >> 3) ))
 	}
 	function sig1 {
 		rotright ${1} 17; rotright__a=$rotright__out
 		rotright ${1} 19; rotright__b=$rotright__out
-		echo $(( rotright__a ^ rotright__b ^ (${1} >> 10) ))
+		sig1__out=$(( rotright__a ^ rotright__b ^ (${1} >> 10) ))
 	}
 	function b32 {
 		echo $(( ${1} & 0xFFFFFFFF ))
@@ -80,7 +80,9 @@ sha256sum.bash() {
 			m[$i]=$(b32 $(( (${data[$j]} << 24) | (${data[$(($j + 1))]} << 16) | (${data[$(($j + 2))]} << 8) | ${data[$(($j + 3))]} )))
 		done
 		for i in {16..63}; do
-			m[$i]=$(b32 $(( $(sig1 ${m[$(($i - 2))]}) + ${m[$(($i - 7))]} + $(sig0 ${m[$(($i - 15))]}) + ${m[$(($i - 16))]} )))
+			sig0 ${m[$(($i - 15))]}
+			sig1 ${m[$(($i - 2))]}
+			m[$i]=$(b32 $(( sig1__out + ${m[$(($i - 7))]} + sig0__out + ${m[$(($i - 16))]} )))
 		done
 
 		local a=${state[0]}
@@ -94,9 +96,12 @@ sha256sum.bash() {
 	
 		for i in {0..63}; do
 			ch $e $f $g
+			maj $a $b $c
+			ep0 $a
+			ep1 $e
 
-			local t1=$(b32 $(( $h + $(ep1 $e) + $ch__out + ${k[$i]} + ${m[$i]} )))
-			local t2=$(b32 $(( $(ep0 $a) + $(maj $a $b $c) )))
+			local t1=$(b32 $(( $h + $ep1__out + $ch__out + ${k[$i]} + ${m[$i]} )))
+			local t2=$(b32 $(( $ep0__out + $maj__out )))
 			h=$g
 			g=$f
 			f=$e
