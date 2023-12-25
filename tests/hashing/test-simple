@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -o errexit
+
+
+expect_out='70b65f3c616222691d9898573377eec90cc03f1e4768f0fffd4c93d4c194821c'
+write_in='test of a SHA256 checksum'
+result=$(printf '%s' "$write_in" | ./sha256sum.bash)
+
+[[ $result == $expect_out ]] || exit 1
+
+exit 0
+
+
+
