@@ -89,14 +89,15 @@ sha256sum.bash() {
 			m[$i]=$b32__out
 		done
 
-		local a=${state[0]}
-		local b=${state[1]}
-		local c=${state[2]}
-		local d=${state[3]}
-		local e=${state[4]}
-		local f=${state[5]}
-		local g=${state[6]}
-		local h=${state[7]}
+		local \
+			a=${state[0]} \
+			b=${state[1]} \
+			c=${state[2]} \
+			d=${state[3]} \
+			e=${state[4]} \
+			f=${state[5]} \
+			g=${state[6]} \
+			h=${state[7]}
 	
 		for i in {0..63}; do
 			ep1 $e
