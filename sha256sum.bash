@@ -64,11 +64,11 @@ sha256sum.bash() {
 	function sha256_transform {
 		declare -a m
 		m=(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-		for i in `seq 0 15`; do
+		for i in {0..15}; do
 			local j=$(($i * 4))
 			m[$i]=$(b32 $(( (${data[$j]} << 24) | (${data[$(($j + 1))]} << 16) | (${data[$(($j + 2))]} << 8) | ${data[$(($j + 3))]} )))
 		done
-		for i in `seq 16 63`; do
+		for i in {16..63}; do
 			m[$i]=$(b32 $(( $(sig1 ${m[$(($i - 2))]}) + ${m[$(($i - 7))]} + $(sig0 ${m[$(($i - 15))]}) + ${m[$(($i - 16))]} )))
 		done
 
@@ -81,7 +81,7 @@ sha256sum.bash() {
 		local g=${state[6]}
 		local h=${state[7]}
 	
-		for i in `seq 0 63`; do
+		for i in {0..63}; do
 			local t1=$(b32 $(( $h + $(ep1 $e) + $(ch $e $f $g) + ${k[$i]} + ${m[$i]} )))
 			local t2=$(b32 $(( $(ep0 $a) + $(maj $a $b $c) )))
 			h=$g
@@ -133,7 +133,7 @@ sha256sum.bash() {
 			i=$(( $i + 1 ))
 		done
 		sha256_transform
-		for j in `seq 0 55`; do
+		for j in {0..55}; do
 			data[$j]=0
 		done
 	fi
@@ -149,7 +149,7 @@ sha256sum.bash() {
 	data[56]=$(( (${bitlen[1]} >> 24) & 0xFF ))
 	sha256_transform
 	
-	for j in `seq 0 3`; do
+	for j in {0..3}; do
 		rhash[$j]=$(( (${state[0]} >> (24 - $j * 8)) & 0xff ))
 		rhash[$(( $j + 4 ))]=$(( (${state[1]} >> (24 - $j * 8)) & 0xff ))
 		rhash[$(( $j + 8 ))]=$(( (${state[2]} >> (24 - $j * 8)) & 0xff ))
