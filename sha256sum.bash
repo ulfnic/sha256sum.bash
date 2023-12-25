@@ -22,9 +22,9 @@ sha256sum.bash() {
 
 	function dbl_int_add {
 		if [[ ${bitlen[0]} > $(( 0xffffffff - ${1} )) ]]; then
-			bitlen[1]=$(( ${bitlen[1]} + 1 ))
+			bitlen[1]=$(( bitlen[1] + 1 ))
 		fi
-		bitlen[0]=$(( ${bitlen[0]} + ${1} ))
+		bitlen[0]=$(( bitlen[0] + ${1} ))
 	}
 	
 	function rotright {
@@ -71,15 +71,15 @@ sha256sum.bash() {
 		declare -a m
 		m=(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
 		for i in {0..15}; do
-			local j=$(($i * 4))
-			b32 $(( (${data[$j]} << 24) | (${data[$(($j + 1))]} << 16) | (${data[$(($j + 2))]} << 8) | ${data[$(($j + 3))]} ))
-			m[$i]=$b32__out
+			local j=$((i * 4))
+			b32 $(( (data[j] << 24) | (data[j+1] << 16) | (data[j+2] << 8) | data[j+3] ))
+			m[i]=$b32__out
 		done
 		for i in {16..63}; do
-			sig0 ${m[$(($i - 15))]}
-			sig1 ${m[$(($i - 2))]}
-			b32 $(( sig1__out + ${m[$(($i - 7))]} + sig0__out + ${m[$(($i - 16))]} ))
-			m[$i]=$b32__out
+			sig0 ${m[i-15]}
+			sig1 ${m[i-2]}
+			b32 $(( sig1__out + m[i-7] + sig0__out + m[i-16] ))
+			m[i]=$b32__out
 		done
 
 		local \
@@ -95,50 +95,50 @@ sha256sum.bash() {
 		for i in {0..63}; do
 			ep1 $e
 			ch $e $f $g
-			b32 $(( $h + $ep1__out + $ch__out + ${k[$i]} + ${m[$i]} ))
+			b32 $(( h + ep1__out + ch__out + k[i] + m[i] ))
 			local t1=$b32__out
 
 			maj $a $b $c
 			ep0 $a
-			b32 $(( $ep0__out + $maj__out ))
+			b32 $(( ep0__out + maj__out ))
 			local t2=$b32__out
 
 			h=$g
 			g=$f
 			f=$e
 
-			b32 $(( $d + $t1 ))
+			b32 $(( d + t1 ))
 			e=$b32__out
 			d=$c
 			c=$b
 			b=$a
 
-			b32 $(( $t1 + $t2 ))
+			b32 $(( t1 + t2 ))
 			a=$b32__out
 		done
-		b32 $(( ${state[0]} + $a ))	
+		b32 $(( state[0] + a ))	
 		state[0]=$b32__out
-		b32 $(( ${state[1]} + $b ))
+		b32 $(( state[1] + b ))
 		state[1]=$b32__out
-		b32 $(( ${state[2]} + $c ))
+		b32 $(( state[2] + c ))
 		state[2]=$b32__out
-		b32 $(( ${state[3]} + $d ))
+		b32 $(( state[3] + d ))
 		state[3]=$b32__out
-		b32 $(( ${state[4]} + $e ))
+		b32 $(( state[4] + e ))
 		state[4]=$b32__out
-		b32 $(( ${state[5]} + $f ))
+		b32 $(( state[5] + f ))
 		state[5]=$b32__out
-		b32 $(( ${state[6]} + $g ))
+		b32 $(( state[6] + g ))
 		state[6]=$b32__out
-		b32 $(( ${state[7]} + $h ))
+		b32 $(( state[7] + h ))
 		state[7]=$b32__out
 
 	}
 	
 	while read line; do
 		for byte in $line; do
-			data[$datalen]=$byte
-			datalen=$(( $datalen + 1 ))
+			data[datalen]=$byte
+			datalen=$(( datalen + 1 ))
 			if [[ $datalen == 64 ]]; then
 				sha256_transform
 				dbl_int_add 512
@@ -150,45 +150,45 @@ sha256sum.bash() {
 	local i=$datalen
 	
 	if [[ $datalen < 56 ]]; then
-		data[$i]=$(( 0x80 ))
-		i=$(( $i + 1 ))
+		data[i]=$(( 0x80 ))
+		i=$(( i + 1 ))
 		while [[ $i < 56 ]]; do
-			data[$i]=0
-			i=$(( $i + 1 ))
+			data[i]=0
+			i=$(( i + 1 ))
 		done
 	else
-		data[$i]=$(( 0x80 ))
-		i=$(( $i + 1 ))
+		data[i]=$(( 0x80 ))
+		i=$(( i + 1 ))
 		while [[ $i < 64 ]]; do
-			data[$i]=0
-			i=$(( $i + 1 ))
+			data[i]=0
+			i=$(( i + 1 ))
 		done
 		sha256_transform
 		for j in {0..55}; do
-			data[$j]=0
+			data[j]=0
 		done
 	fi
 	
-	dbl_int_add $(( $datalen * 8 ))
-	data[63]=$(( ${bitlen[0]} & 0xFF ))
-	data[62]=$(( (${bitlen[0]} >> 8) & 0xFF ))
-	data[61]=$(( (${bitlen[0]} >> 16) & 0xFF ))
-	data[60]=$(( (${bitlen[0]} >> 24) & 0xFF ))
-	data[59]=$(( ${bitlen[1]} & 0xFF ))
-	data[58]=$(( (${bitlen[1]} >> 8) & 0xFF ))
-	data[57]=$(( (${bitlen[1]} >> 16) & 0xFF ))
-	data[56]=$(( (${bitlen[1]} >> 24) & 0xFF ))
+	dbl_int_add $(( datalen * 8 ))
+	data[63]=$(( bitlen[0] & 0xFF ))
+	data[62]=$(( (bitlen[0] >> 8) & 0xFF ))
+	data[61]=$(( (bitlen[0] >> 16) & 0xFF ))
+	data[60]=$(( (bitlen[0] >> 24) & 0xFF ))
+	data[59]=$(( bitlen[1] & 0xFF ))
+	data[58]=$(( (bitlen[1] >> 8) & 0xFF ))
+	data[57]=$(( (bitlen[1] >> 16) & 0xFF ))
+	data[56]=$(( (bitlen[1] >> 24) & 0xFF ))
 	sha256_transform
 	
 	for j in {0..3}; do
-		rhash[$j]=$(( (${state[0]} >> (24 - $j * 8)) & 0xff ))
-		rhash[$(( $j + 4 ))]=$(( (${state[1]} >> (24 - $j * 8)) & 0xff ))
-		rhash[$(( $j + 8 ))]=$(( (${state[2]} >> (24 - $j * 8)) & 0xff ))
-		rhash[$(( $j + 12 ))]=$(( (${state[3]} >> (24 - $j * 8)) & 0xff ))
-		rhash[$(( $j + 16 ))]=$(( (${state[4]} >> (24 - $j * 8)) & 0xff ))
-		rhash[$(( $j + 20 ))]=$(( (${state[5]} >> (24 - $j * 8)) & 0xff ))
-		rhash[$(( $j + 24 ))]=$(( (${state[6]} >> (24 - $j * 8)) & 0xff ))
-		rhash[$(( $j + 28 ))]=$(( (${state[7]} >> (24 - $j * 8)) & 0xff ))
+		rhash[j]=$(( (state[0] >> (24 - j * 8)) & 0xff ))
+		rhash[j+4]=$(( (state[1] >> (24 - j * 8)) & 0xff ))
+		rhash[j+8]=$(( (state[2] >> (24 - j * 8)) & 0xff ))
+		rhash[j+12]=$(( (state[3] >> (24 - j * 8)) & 0xff ))
+		rhash[j+16]=$(( (state[4] >> (24 - j * 8)) & 0xff ))
+		rhash[j+20]=$(( (state[5] >> (24 - j * 8)) & 0xff ))
+		rhash[j+24]=$(( (state[6] >> (24 - j * 8)) & 0xff ))
+		rhash[j+28]=$(( (state[7] >> (24 - j * 8)) & 0xff ))
 	done
 	
 	printf "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n" ${rhash[@]}
